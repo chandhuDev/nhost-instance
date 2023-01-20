@@ -1,16 +1,27 @@
-import styles from '../styles/components/SignIn.module.css';
-
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import Input from './Input';
+import styles from '../styles/components/SignIn.module.css'
+import { useState } from 'react'
+import { useSignInEmailPassword } from '@nhost/react'
+import { Link, Navigate } from 'react-router-dom'
+import Input from './Input'
+import Spinner from './Spinner'
 
 const SignIn = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
-  const handleOnSubmit = async (e) => {
-    e.preventDefault();
-  };
+  const { signInEmailPassword, isLoading, isSuccess, needsEmailVerification, isError, error } =
+    useSignInEmailPassword()
+
+  const handleOnSubmit = (e) => {
+    e.preventDefault()
+    signInEmailPassword(email, password)
+  }
+
+  if (isSuccess) {
+    return <Navigate to="/" replace={true} />
+  }
+
+  const disableForm = isLoading || needsEmailVerification
 
   return (
     <div className={styles.container}>
@@ -19,26 +30,36 @@ const SignIn = () => {
           <img src={process.env.PUBLIC_URL + 'logo.svg'} alt="logo" />
         </div>
 
-        <form onSubmit={handleOnSubmit} className={styles.form}>
-          <Input
-            type="email"
-            label="Email address"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            type="password"
-            label="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-          />
+        {needsEmailVerification ? (
+          <p className={styles['verification-text']}>
+            Please check your mailbox and follow the verification link to verify your email.
+          </p>
+        ) : (
+          <form onSubmit={handleOnSubmit} className={styles.form}>
+            <Input
+              type="email"
+              label="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={disableForm}
+              required
+            />
+            <Input
+              type="password"
+              label="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={disableForm}
+              required
+            />
 
-          <button type="submit" className={styles.button}>
-            Sign in
-          </button>
-        </form>
+            <button type="submit" disabled={disableForm} className={styles.button}>
+              {isLoading ? <Spinner size="sm" /> : 'Sign in'}
+            </button>
+
+            {isError ? <p className={styles['error-text']}>{error?.message}</p> : null}
+          </form>
+        )}
       </div>
 
       <p className={styles.text}>
@@ -48,7 +69,7 @@ const SignIn = () => {
         </Link>
       </p>
     </div>
-  );
-};
+  )
+}
 
-export default SignIn;
+export default SignIn
